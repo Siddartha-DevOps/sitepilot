@@ -1,13 +1,22 @@
 #Node modules
 node_modules/
+
+#Environment variables
 .env
+
+#OS files
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
+
+# Build folders
+web-build/
 dist/
 build/
 
 #Expo 
-
 .expo/
-*.log
+.expo-shared/
 uploads/

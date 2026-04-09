@@ -1,32 +1,8 @@
-import apiClient from '../api/apiClient';
-
-const materialService = {
-  async getAll() {
-    const { data } = await apiClient.get('/materials');
-    return data;
-  },
-
-  async create(payload) {
-    const { data } = await apiClient.post('/materials', payload);
-    return data;
-  },
-
-  async update(id, payload) {
-    const { data } = await apiClient.put(`/materials/${id}`, payload);
-    return data;
-  },
-
-  async getLowStock(threshold = 10) {
-    const { data } = await apiClient.get(`/materials/low-stock?threshold=${threshold}`);
-    return data;
-  },
-
-  async uploadPhoto(formData) {
-    const { data } = await apiClient.post('/photos/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return data;
-  },
+import api from '../api/apiClient';
+export default {
+  async getAll()           { const {data} = await api.get('/materials');              return data; },
+  async create(payload)    { const {data} = await api.post('/materials',payload);     return data; },
+  async update(id,payload) { const {data} = await api.put(`/materials/${id}`,payload);return data; },
+  async getLowStock()      { const {data} = await api.get('/materials/low-stock');    return data; },
+  async consume(id,amount) { const {data} = await api.patch(`/materials/${id}/consume`,{amount}); return data; },
 };
-
-export default materialService;

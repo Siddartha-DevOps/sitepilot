@@ -7,37 +7,20 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F97316"
     },
     "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.sitepilot.app"
-    },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.sitepilot.app" },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#F97316"
-      },
-      "package": "com.sitepilot.app",
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#F97316" },
+      "package": "com.sitepilot.app"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
     "plugins": [
-      [
-        "expo-camera",
-        { "cameraPermission": "Allow sitePilot to access your camera." }
-      ],
-      [
-        "expo-image-picker",
-        { "photosPermission": "Allow sitePilot to access your photos." }
-      ]
+      ["expo-camera",       { "cameraPermission": "Allow sitePilot to access your camera." }],
+      ["expo-image-picker", { "photosPermission": "Allow sitePilot to access your photos." }]
     ]
   }
 }

@@ -5,12 +5,11 @@ const reportSchema = new mongoose.Schema({
   date:         { type: Date, required: true, default: Date.now },
   workDone:     { type: String, required: true },
   workersCount: { type: Number, required: true },
-  materialsUsed:{ type: String },
-  notes:        { type: String },
-  photos:       [{ type: String }],  // File paths / URLs
+  materialsUsed:{ type: String, default: '' },
+  notes:        { type: String, default: '' },
+  weather:      { type: String, default: '' },
+  photos:       [{ type: String }],
   submittedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  weather:      { type: String },
-  issues:       { type: String },
 }, { timestamps: true });
 
 reportSchema.index({ project: 1, date: -1 });

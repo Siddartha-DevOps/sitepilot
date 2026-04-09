@@ -1,105 +1,48 @@
 const express = require('express');
 const Report  = require('../models/Report');
 const protect = require('../middleware/auth');
+const router  = express.Router();
 
-const router = express.Router();
 router.use(protect);
 
-// GET /api/reports
 router.get('/', async (req, res) => {
   try {
     const { project, date, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (project) filter.project = project;
     if (date) {
-      const start = new Date(date);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(date);
-      end.setHours(23, 59, 59, 999);
-      filter.date = { $gte: start, $lte: end };
+      const s = new Date(date); s.setHours(0,0,0,0);
+      const e = new Date(date); e.setHours(23,59,59,999);
+      filter.date = { $gte: s, $lte: e };
     }
-
     const reports = await Report.find(filter)
-      .populate('project',     'name location')
-      .populate('submittedBy', 'name email')
-      .sort({ date: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
-    const total = await Report.countDocuments(filter);
-    res.json({ data: reports, total, page: parseInt(page), pages: Math.ceil(total / limit) });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+      .populate('project','name location').populate('submittedBy','name')
+      .sort({ date: -1 }).skip((page-1)*limit).limit(+limit);
+    res.json({ data: reports, total: await Report.countDocuments(filter) });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/reports
 router.post('/', async (req, res) => {
   try {
     const { project, date, workDone, workersCount, materialsUsed, notes, weather, issues } = req.body;
-
-    if (!project || !workDone || !workersCount) {
-      return res.status(400).json({ message: 'project, workDone, and workersCount are required' });
-    }
-
-    const report = await Report.create({
-      project,
-      date:         date || new Date(),
-      workDone,
-      workersCount: parseInt(workersCount),
-      materialsUsed,
-      notes,
-      weather,
-      issues,
-      photos:       req.body.photos || [],
-      submittedBy:  req.user._id,
-    });
-
-    const populated = await Report.findById(report._id)
-      .populate('project',     'name location')
-      .populate('submittedBy', 'name email');
-
-    res.status(201).json(populated);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+    if (!project || !workDone || !workersCount)
+      return res.status(400).json({ message: 'project, workDone, workersCount required' });
+    const report = await Report.create({ project, date: date||new Date(), workDone, workersCount: +workersCount, materialsUsed, notes, weather, issues, photos: req.body.photos||[], submittedBy: req.user._id });
+    res.status(201).json(report);
+  } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-// GET /api/reports/:id
 router.get('/:id', async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id)
-      .populate('project',     'name location')
-      .populate('submittedBy', 'name email');
-    if (!report) return res.status(404).json({ message: 'Report not found' });
-    res.json(report);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const r = await Report.findById(req.params.id).populate('project','name').populate('submittedBy','name');
+    if (!r) return res.status(404).json({ message: 'Not found' });
+    res.json(r);
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// PUT /api/reports/:id
-router.put('/:id', async (req, res) => {
-  try {
-    const report = await Report.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
-      .populate('project',     'name location')
-      .populate('submittedBy', 'name email');
-    if (!report) return res.status(404).json({ message: 'Report not found' });
-    res.json(report);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// DELETE /api/reports/:id
 router.delete('/:id', async (req, res) => {
-  try {
-    const report = await Report.findByIdAndDelete(req.params.id);
-    if (!report) return res.status(404).json({ message: 'Report not found' });
-    res.json({ message: 'Report deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  try { await Report.findByIdAndDelete(req.params.id); res.json({ message: 'Deleted' }); }
+  catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 module.exports = router;

@@ -1,77 +1,87 @@
-const express = require('express');
-const path    = require('path');
-const Photo   = require('../models/Photo');
-const protect = require('../middleware/auth');
-const upload  = require('../middleware/upload');
+const express  = require('express');
+const Project  = require('../models/Project');
+const Report   = require('../models/Report');
+const Material = require('../models/Material');
+const Photo    = require('../models/Photo');
+const protect  = require('../middleware/auth');
+const router   = express.Router();
 
-const router = express.Router();
 router.use(protect);
 
-// POST /api/photos/upload  – upload one or many photos
-router.post('/upload', upload.array('photos', 20), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
-    }
-    if (!req.body.project) {
-      return res.status(400).json({ message: 'project is required' });
-    }
-
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const docs    = req.files.map(file => ({
-      project:    req.body.project,
-      filename:   file.filename,
-      url:        `${baseUrl}/uploads/${file.filename}`,
-      note:       req.body.note || '',
-      uploadedBy: req.user._id,
-      size:       file.size,
-      mimeType:   file.mimetype,
-    }));
-
-    const photos = await Photo.insertMany(docs);
-    res.status(201).json(photos);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET /api/photos  – list all photos (optionally by project)
+// GET /api/projects
 router.get('/', async (req, res) => {
   try {
-    const { project, page = 1, limit = 30 } = req.query;
+    const { status, search, page = 1, limit = 50 } = req.query;
     const filter = {};
-    if (project) filter.project = project;
-
-    const photos = await Photo.find(filter)
-      .populate('project',    'name')
-      .populate('uploadedBy', 'name')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
-    const total = await Photo.countDocuments(filter);
-    res.json({ data: photos, total });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    if (status && status !== 'all') filter.status = status;
+    if (search) filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { location: { $regex: search, $options: 'i' } },
+    ];
+    const [projects, total] = await Promise.all([
+      Project.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(+limit),
+      Project.countDocuments(filter),
+    ]);
+    res.json({ data: projects, total, page: +page });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// DELETE /api/photos/:id
+// POST /api/projects
+router.post('/', async (req, res) => {
+  try {
+    const project = await Project.create({ ...req.body, createdBy: req.user._id });
+    res.status(201).json(project);
+  } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+// GET /api/projects/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const p = await Project.findById(req.params.id);
+    if (!p) return res.status(404).json({ message: 'Project not found' });
+    res.json(p);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// PUT /api/projects/:id
+router.put('/:id', async (req, res) => {
+  try {
+    const p = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!p) return res.status(404).json({ message: 'Project not found' });
+    res.json(p);
+  } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+// DELETE /api/projects/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const fs    = require('fs');
-    const photo = await Photo.findById(req.params.id);
-    if (!photo) return res.status(404).json({ message: 'Photo not found' });
+    await Project.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Project deleted' });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
 
-    // Remove file from disk
-    const filePath = path.join(process.env.UPLOAD_PATH || './uploads', photo.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+// Sub-resources
+router.get('/:id/reports', async (req, res) => {
+  try {
+    const reports = await Report.find({ project: req.params.id })
+      .populate('submittedBy', 'name email').sort({ date: -1 });
+    res.json(reports);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
 
-    await photo.deleteOne();
-    res.json({ message: 'Photo deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+router.get('/:id/materials', async (req, res) => {
+  try {
+    const materials = await Material.find({ project: req.params.id }).sort({ createdAt: -1 });
+    res.json(materials);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+router.get('/:id/photos', async (req, res) => {
+  try {
+    const photos = await Photo.find({ project: req.params.id })
+      .populate('uploadedBy', 'name').sort({ createdAt: -1 });
+    res.json(photos);
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 module.exports = router;

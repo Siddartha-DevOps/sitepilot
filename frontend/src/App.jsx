@@ -1,8 +1,10 @@
+//  Import
 import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LayoutDashboard, FolderOpen, FileText, Package, Camera, Bell, LogOut, Menu, X, HardHat, ChevronRight } from 'lucide-react'
 import { CheckSquare } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 
 import Login           from './pages/Login'
 import Dashboard       from './pages/Dashboard'
@@ -16,7 +18,10 @@ import Photos          from './pages/Photos'
 import Notifications   from './pages/Notifications'
 import Profile         from './pages/Profile'
 import WhatIsSitePilot from './pages/WhatIsSitePilot'
+import Chat            from './pages/Chat'
 
+
+// 2.  NAV array
 const NAV = [
   { to: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard'     },
   { to: '/projects',      icon: FolderOpen,      label: 'Projects'      },
@@ -25,7 +30,9 @@ const NAV = [
   { to: '/inventory',     icon: Package,         label: 'Inventory'     },
   { to: '/photos',        icon: Camera,          label: 'Photos'        },
   { to: '/notifications', icon: Bell,            label: 'Notifications' },
-  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { to: '/tasks',         icon: CheckSquare,     label: 'Tasks'         },
+  { to: '/chat',          icon: MessageCircle,   label: 'Chat'          },
+  { to: '/chat',          icon: MessageCircle,   label: 'Team Chat'     }
 
 ]
 
@@ -125,7 +132,8 @@ function Layout() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="profile"       element={<Profile />} />
             <Route path="*"             element={<Navigate to="dashboard" replace />} />
-            <Route path="tasks" element={<Tasks />} />
+            <Route path="tasks"         element={<Tasks />} />
+            <Route path="chat"          element={<Chat />} />
           </Routes>
         </main>
       </div>

@@ -8,7 +8,7 @@ import {
 
 // ── Sample Data ──────────────────────────────────────────────────────────────
 const SAMPLE_TASKS = [
-  { id: 1,  title: 'Complete foundation inspection – Grid B3',     project: 'Highway NH-44',         assignee: 'Ravi Kumar',   due: '2025-01-20', priority: 'high',   status: 'open',        category: 'Inspection' },
+  { id: 1,  title: 'Complete foundation inspection – Grid B3',      project: 'Highway NH-44',         assignee: 'Ravi Kumar',   due: '2025-01-20', priority: 'high',   status: 'open',        category: 'Inspection' },
   { id: 2,  title: 'Order additional TMT steel bars (20 tonnes)',   project: 'Highway NH-44',         assignee: 'Suresh M',     due: '2025-01-18', priority: 'urgent', status: 'in-progress', category: 'Procurement' },
   { id: 3,  title: 'Fix scaffolding on Level 2 north side',         project: 'Commercial Complex A',  assignee: 'Ravi Kumar',   due: '2025-01-17', priority: 'urgent', status: 'open',        category: 'Safety' },
   { id: 4,  title: 'Submit weekly material consumption report',     project: 'Residential Colony P2', assignee: 'Priya S',      due: '2025-01-19', priority: 'medium', status: 'open',        category: 'Reporting' },

@@ -1,236 +1,217 @@
-import React, { useState } from 'react';
-import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity,
-  TextInput, Modal, ScrollView, Alert,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import api from '../api/client'
+import { Plus, Search, FolderOpen, MapPin, Edit2, Trash2, X, Check } from 'lucide-react'
 
-import Card        from '../components/Card';
-import Button      from '../components/Button';
-import InputField  from '../components/InputField';
-import ProgressBar from '../components/ProgressBar';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../constants/theme';
+const STATUS_OPTS = ['active', 'completed', 'paused', 'cancelled']
+const EMPTY = { name: '', location: '', description: '', startDate: '', endDate: '', budget: '', manager: '', status: 'active', progress: 0 }
 
-const INITIAL_PROJECTS = [
-  { id: '1', name: 'Highway NH-44 Widening',     location: 'Bangalore–Chennai', progress: 68, status: 'active',   startDate: '2024-01-10', endDate: '2025-06-30', budget: '₹4.2 Cr', manager: 'Ravi Kumar'   },
-  { id: '2', name: 'Commercial Complex Block A',  location: 'Whitefield, BLR',  progress: 35, status: 'active',   startDate: '2024-03-15', endDate: '2025-09-30', budget: '₹8.7 Cr', manager: 'Priya Sharma' },
-  { id: '3', name: 'Residential Colony Phase 2',  location: 'Anantapur, AP',    progress: 82, status: 'active',   startDate: '2023-11-01', endDate: '2025-03-31', budget: '₹2.1 Cr', manager: 'Suresh Reddy' },
-  { id: '4', name: 'Flyover Bridge Sector 12',    location: 'Hyderabad, TS',    progress:100, status: 'completed', startDate: '2023-06-01', endDate: '2024-12-31', budget: '₹12.5 Cr',manager: 'Anjali Nair'  },
-  { id: '5', name: 'Water Treatment Plant Ext.',  location: 'Vizag, AP',        progress: 20, status: 'active',   startDate: '2024-05-01', endDate: '2026-04-30', budget: '₹6.3 Cr', manager: 'Kiran Babu'   },
-];
+function ProgressBar({ value }) {
+  const c = value >= 75 ? 'bg-green-500' : value >= 40 ? 'bg-orange-500' : 'bg-red-500'
+  return <div className="progress-bar w-full"><div className={`h-full rounded-full ${c}`} style={{ width: `${value}%` }} /></div>
+}
 
-const STATUS_COLOR = { active: COLORS.success, completed: COLORS.info, paused: COLORS.warning };
+function Modal({ title, onClose, onSave, form, setForm, saving }) {
+  const sf = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400"><X size={18} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="label">Project Name *</label>
+              <input className="input" value={form.name} onChange={e => sf('name', e.target.value)} placeholder="Highway NH-44 Widening" />
+            </div>
+            <div>
+              <label className="label">Location *</label>
+              <input className="input" value={form.location} onChange={e => sf('location', e.target.value)} placeholder="Bangalore–Chennai" />
+            </div>
+            <div>
+              <label className="label">Manager</label>
+              <input className="input" value={form.manager} onChange={e => sf('manager', e.target.value)} placeholder="Ravi Kumar" />
+            </div>
+            <div>
+              <label className="label">Start Date</label>
+              <input className="input" type="date" value={form.startDate} onChange={e => sf('startDate', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">End Date</label>
+              <input className="input" type="date" value={form.endDate} onChange={e => sf('endDate', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Budget</label>
+              <input className="input" value={form.budget} onChange={e => sf('budget', e.target.value)} placeholder="₹4.2 Cr" />
+            </div>
+            <div>
+              <label className="label">Status</label>
+              <select className="input" value={form.status} onChange={e => sf('status', e.target.value)}>
+                {STATUS_OPTS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Progress ({form.progress}%)</label>
+              <input type="range" min={0} max={100} value={form.progress} onChange={e => sf('progress', +e.target.value)} className="w-full accent-orange-500" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Description</label>
+              <textarea className="input" rows={3} value={form.description} onChange={e => sf('description', e.target.value)} placeholder="Project description..." />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 p-6 pt-0">
+          <button onClick={onClose} className="btn btn-ghost flex-1">Cancel</button>
+          <button onClick={onSave} disabled={saving || !form.name || !form.location} className="btn btn-primary flex-1">
+            {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Check size={16} />Save</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-export default function ProjectListScreen() {
-  const navigation = useNavigation();
-  const insets     = useSafeAreaInsets();
+export default function Projects() {
+  const [projects, setProjects] = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [search,   setSearch]   = useState('')
+  const [filter,   setFilter]   = useState('all')
+  const [modal,    setModal]    = useState(null)
+  const [form,     setForm]     = useState(EMPTY)
+  const [saving,   setSaving]   = useState(false)
+  const [deleting, setDeleting] = useState(null)
 
-  const [projects,     setProjects]     = useState(INITIAL_PROJECTS);
-  const [search,       setSearch]       = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showModal,    setShowModal]    = useState(false);
-
-  // ── New project form state ─────────────────────────────────────────────────
-  const [form, setForm] = useState({ name: '', location: '', startDate: '', endDate: '', budget: '', manager: '' });
-
-  const filtered = projects.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-                        p.location.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
-
-  function handleAddProject() {
-    if (!form.name.trim() || !form.location.trim()) {
-      Alert.alert('Required', 'Project name and location are required.');
-      return;
-    }
-    const newProject = {
-      id:        Date.now().toString(),
-      name:      form.name.trim(),
-      location:  form.location.trim(),
-      progress:  0,
-      status:    'active',
-      startDate: form.startDate,
-      endDate:   form.endDate,
-      budget:    form.budget,
-      manager:   form.manager,
-    };
-    setProjects(prev => [newProject, ...prev]);
-    setForm({ name: '', location: '', startDate: '', endDate: '', budget: '', manager: '' });
-    setShowModal(false);
+  async function load() {
+    setLoading(true)
+    try {
+      const params = {}
+      if (filter !== 'all') params.status = filter
+      if (search) params.search = search
+      const { data } = await api.get('/projects', { params })
+      setProjects(data.data || [])
+    } finally { setLoading(false) }
   }
 
-  // ── Filter pill ────────────────────────────────────────────────────────────
-  function FilterPill({ label, value }) {
-    const active = filterStatus === value;
-    return (
-      <TouchableOpacity
-        style={[styles.pill, active && styles.pillActive]}
-        onPress={() => setFilterStatus(value)}
-      >
-        <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
-      </TouchableOpacity>
-    );
+  useEffect(() => { load() }, [filter, search])
+
+  async function save() {
+    setSaving(true)
+    try {
+      if (modal === 'add') {
+        const { data } = await api.post('/projects', form)
+        setProjects(p => [data, ...p])
+      } else {
+        const { data } = await api.put(`/projects/${modal._id}`, form)
+        setProjects(p => p.map(x => x._id === data._id ? data : x))
+      }
+      setModal(null)
+    } catch (e) { alert(e.response?.data?.message || 'Save failed') }
+    finally { setSaving(false) }
   }
 
-  // ── Project card ───────────────────────────────────────────────────────────
-  function ProjectCard({ item }) {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate('ProjectDetails', { project: item })}
-      >
-        <Card shadow="md" style={styles.projectCard}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardLeft}>
-              <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[item.status] }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.projectName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.projectLocation}>
-                  <Ionicons name="location-outline" size={12} color={COLORS.textLight} /> {item.location}
-                </Text>
-              </View>
-            </View>
-            <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-              <Text style={[styles.statusText, { color: STATUS_COLOR[item.status] }]}>
-                {item.status.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-
-          <ProgressBar progress={item.progress} showPercent />
-
-          <View style={styles.cardFooter}>
-            <Text style={styles.metaText}>👷 {item.manager}</Text>
-            <Text style={styles.metaText}>💰 {item.budget}</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
-          </View>
-        </Card>
-      </TouchableOpacity>
-    );
+  async function del(id) {
+    if (!confirm('Delete this project?')) return
+    setDeleting(id)
+    try {
+      await api.delete(`/projects/${id}`)
+      setProjects(p => p.filter(x => x._id !== id))
+    } finally { setDeleting(null) }
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <Text style={styles.brand}>sitePilot</Text>
-        <Text style={styles.headerTitle}>Projects</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
-          <Ionicons name="add" size={24} color={COLORS.textWhite} />
-        </TouchableOpacity>
-      </View>
+    <div className="max-w-7xl mx-auto space-y-5">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Projects</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{projects.length} project{projects.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button onClick={() => { setForm(EMPTY); setModal('add') }} className="btn btn-primary">
+          <Plus size={16} /> New Project
+        </button>
+      </div>
 
-      {/* ── Search ──────────────────────────────────────────────────────── */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={COLORS.textLight} style={{ marginRight: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search projects or location..."
-            placeholderTextColor={COLORS.textLight}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={18} color={COLORS.textLight} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input className="input pl-9" placeholder="Search projects…" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {['all', ...STATUS_OPTS].map(s => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`badge px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all capitalize ${filter === s ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-orange-50'}`}>
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* ── Filters ─────────────────────────────────────────────────────── */}
-      <View style={styles.filters}>
-        <FilterPill label="All"       value="all"       />
-        <FilterPill label="Active"    value="active"    />
-        <FilterPill label="Completed" value="completed" />
-        <FilterPill label="Paused"    value="paused"    />
-      </View>
+      <div className="card p-0 overflow-hidden">
+        {loading ? (
+          <div className="p-8 space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <FolderOpen size={48} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-gray-500">No projects found</p>
+            <button onClick={() => { setForm(EMPTY); setModal('add') }} className="btn btn-primary mt-4 mx-auto">Create first project</button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Project</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3 hidden md:table-cell">Location</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3 hidden lg:table-cell">Manager</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Progress</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Status</th>
+                  <th className="px-5 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map(p => (
+                  <tr key={p._id} className="table-row">
+                    <td className="px-5 py-4">
+                      <Link to={`/projects/${p._id}`} className="font-semibold text-slate-800 hover:text-orange-600 transition-colors">{p.name}</Link>
+                      <div className="text-xs text-gray-400">💰 {p.budget || '—'}</div>
+                    </td>
+                    <td className="px-5 py-4 hidden md:table-cell">
+                      <span className="flex items-center gap-1 text-sm text-gray-500"><MapPin size={12} />{p.location}</span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <span className="text-sm text-gray-600">{p.manager || '—'}</span>
+                    </td>
+                    <td className="px-5 py-4 min-w-[120px]">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1"><ProgressBar value={p.progress} /></div>
+                        <span className="text-xs font-bold text-gray-600 w-8 text-right">{p.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`badge badge-${p.status}`}>{p.status}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => { setForm({ ...p, startDate: p.startDate?.slice(0,10)||'', endDate: p.endDate?.slice(0,10)||'' }); setModal(p) }}
+                          className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-lg">
+                          <Edit2 size={15} />
+                        </button>
+                        <button onClick={() => del(p._id)} disabled={deleting === p._id}
+                          className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg">
+                          {deleting === p._id ? <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin block" /> : <Trash2 size={15} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-      {/* ── Count ───────────────────────────────────────────────────────── */}
-      <Text style={styles.countText}>{filtered.length} project{filtered.length !== 1 ? 's' : ''} found</Text>
-
-      {/* ── List ────────────────────────────────────────────────────────── */}
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <ProjectCard item={item} />}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="briefcase-outline" size={60} color={COLORS.border} />
-            <Text style={styles.emptyText}>No projects found</Text>
-          </View>
-        }
-      />
-
-      {/* ── FAB ─────────────────────────────────────────────────────────── */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
-        <Ionicons name="add" size={28} color={COLORS.textWhite} />
-      </TouchableOpacity>
-
-      {/* ── Add Project Modal ────────────────────────────────────────────── */}
-      <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Project</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <InputField label="Project Name *"    value={form.name}      onChangeText={v => setForm(f => ({ ...f, name: v }))}      placeholder="e.g. Highway NH-44 Widening" />
-              <InputField label="Location *"        value={form.location}  onChangeText={v => setForm(f => ({ ...f, location: v }))}  placeholder="City, State" />
-              <InputField label="Start Date"        value={form.startDate} onChangeText={v => setForm(f => ({ ...f, startDate: v }))} placeholder="YYYY-MM-DD" />
-              <InputField label="End Date"          value={form.endDate}   onChangeText={v => setForm(f => ({ ...f, endDate: v }))}   placeholder="YYYY-MM-DD" />
-              <InputField label="Budget"            value={form.budget}    onChangeText={v => setForm(f => ({ ...f, budget: v }))}    placeholder="₹ amount" keyboardType="default" />
-              <InputField label="Site Manager"      value={form.manager}   onChangeText={v => setForm(f => ({ ...f, manager: v }))}   placeholder="Full name" />
-              <Button title="Create Project" onPress={handleAddProject} size="lg" style={{ marginTop: SPACING.sm }} />
-              <Button title="Cancel" variant="ghost" onPress={() => setShowModal(false)} size="lg" />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
+      {modal && <Modal title={modal === 'add' ? 'Add New Project' : 'Edit Project'} onClose={() => setModal(null)} onSave={save} form={form} setForm={setForm} saving={saving} />}
+    </div>
+  )
 }
-
-const styles = StyleSheet.create({
-  root:          { flex: 1, backgroundColor: COLORS.background },
-  header:        { backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, paddingTop: SPACING.sm },
-  brand:         { fontSize: FONTS.sizes.md, fontWeight: '900', color: 'rgba(255,255,255,0.7)' },
-  headerTitle:   { fontSize: FONTS.sizes.xl, fontWeight: '800', color: COLORS.textWhite },
-  addBtn:        { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  searchRow:     { padding: SPACING.md, paddingBottom: SPACING.xs },
-  searchBox:     { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: RADIUS.full, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, ...SHADOW.sm },
-  searchInput:   { flex: 1, fontSize: FONTS.sizes.md, color: COLORS.text },
-  filters:       { flexDirection: 'row', gap: SPACING.xs, paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm },
-  pill:          { paddingHorizontal: SPACING.md, paddingVertical: 6, borderRadius: RADIUS.full, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
-  pillActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillText:      { fontSize: FONTS.sizes.xs, fontWeight: '700', color: COLORS.textLight },
-  pillTextActive:{ color: COLORS.textWhite },
-  countText:     { fontSize: FONTS.sizes.xs, color: COLORS.textLight, paddingHorizontal: SPACING.lg, marginBottom: SPACING.xs },
-  list:          { padding: SPACING.md, paddingTop: 0, paddingBottom: 100 },
-  projectCard:   { marginBottom: SPACING.sm },
-  cardHeader:    { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: SPACING.sm },
-  cardLeft:      { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: SPACING.sm },
-  statusDot:     { width: 10, height: 10, borderRadius: 5, marginRight: SPACING.sm, marginTop: 4 },
-  projectName:   { fontSize: FONTS.sizes.md, fontWeight: '700', color: COLORS.text },
-  projectLocation:{ fontSize: FONTS.sizes.xs, color: COLORS.textLight, marginTop: 2 },
-  statusBadge:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
-  statusText:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-  cardFooter:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.border },
-  metaText:      { fontSize: FONTS.sizes.xs, color: COLORS.textLight },
-  empty:         { alignItems: 'center', paddingTop: 80 },
-  emptyText:     { fontSize: FONTS.sizes.md, color: COLORS.textLight, marginTop: SPACING.md },
-  fab:           { position: 'absolute', right: SPACING.lg, bottom: SPACING.xl, width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', ...SHADOW.md },
-  modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
-  modalSheet:    { backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.lg, maxHeight: '90%' },
-  modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
-  modalTitle:    { fontSize: FONTS.sizes.xl, fontWeight: '800', color: COLORS.text },
-});

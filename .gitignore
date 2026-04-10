@@ -1,22 +1,35 @@
-#Node modules
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-#Environment variables
+# Build outputs
+dist/
+build/
+.vite/
+
+# Environment files
 .env
+.env.local
+.env.*.local
 
-#OS files
-.DS_Store
-Thumbs.db
+# Uploads (user-generated)
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build folders
-web-build/
-dist/
-build/
+# Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
 
-#Expo 
-.expo/
-.expo-shared/
-uploads/
+# Testing
+coverage/

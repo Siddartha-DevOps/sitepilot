@@ -14,7 +14,7 @@ const MATERIALS = ['Cement (OPC 53)', 'TMT Steel Bars', 'River Sand', 'Coarse Ag
 const UNITS = ['Bags', 'Tonnes', 'Cft', 'Nos', 'Kg', 'Litres', 'Meters', 'Sqft', 'Rmt'];
 
 export default function MaterialEntry({ navigate }) {
-  const prefill = null; // You can pass project from navigation if needed
+  const prefill = null;
 
   const [form, setForm] = useState({
     project:      prefill || '',
@@ -39,7 +39,11 @@ export default function MaterialEntry({ navigate }) {
 
     return (
       <div style={{ marginBottom: SPACING.md }}>
-        {label && <div style={{ fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.secondary, marginBottom: SPACING.xs }}>{label}</div>}
+        {label && (
+          <div style={{ fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.secondary, marginBottom: SPACING.xs }}>
+            {label}
+          </div>
+        )}
 
         <div
           style={{
@@ -68,12 +72,13 @@ export default function MaterialEntry({ navigate }) {
             backgroundColor: COLORS.surface,
             overflow: 'hidden',
             maxHeight: 200,
-            overflowY: 'auto'
+            overflowY: 'auto',
           }}>
             {options.map(opt => (
               <div
                 key={opt}
                 style={{
+                  display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'center',
                   padding: SPACING.md,
@@ -82,6 +87,144 @@ export default function MaterialEntry({ navigate }) {
                 }}
                 onClick={() => { setField(fieldKey, opt); setOpenPicker(null); }}
               >
-                {form[fieldKey] === opt ? 
-                  <IoCheckmarkCircle size={18} color={COLORS.primary} /> : 
-                  <Io
+                {form[fieldKey] === opt
+                  ? <IoCheckmarkCircle size={18} color={COLORS.primary} />
+                  : <IoEllipseOutline size={18} color={COLORS.textLight} />
+                }
+                <div style={{ marginLeft: 8, fontSize: FONTS.sizes.md, color: COLORS.text }}>
+                  {opt}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  async function handleSubmit() {
+    if (!form.project || !form.material || !form.quantity) {
+      alert('Please fill in Project, Material, and Quantity.');
+      return;
+    }
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 1000)); // simulate API call
+    setLoading(false);
+    alert('Material entry saved successfully!');
+    if (navigate) navigate('dashboard');
+  }
+
+  return (
+    <div style={{ maxWidth: 640, margin: '0 auto', padding: SPACING.md }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: SPACING.lg }}>
+        {navigate && (
+          <div style={{ cursor: 'pointer', marginRight: SPACING.md }} onClick={() => navigate('dashboard')}>
+            <IoArrowBack size={24} color={COLORS.text} />
+          </div>
+        )}
+        <div>
+          <div style={{ fontSize: FONTS.sizes.xl, fontWeight: '700', color: COLORS.text }}>Material Entry</div>
+          <div style={{ fontSize: FONTS.sizes.sm, color: COLORS.textLight }}>Record new material delivery</div>
+        </div>
+      </div>
+
+      <Card style={{ padding: SPACING.lg }}>
+        {/* Project */}
+        <DropdownPicker
+          fieldKey="project"
+          label="Project"
+          options={PROJECTS}
+          icon={<IoBriefcaseOutline size={18} color={COLORS.textLight} />}
+        />
+
+        {/* Material */}
+        <DropdownPicker
+          fieldKey="material"
+          label="Material"
+          options={MATERIALS}
+          icon={<IoCubeOutline size={18} color={COLORS.textLight} />}
+        />
+
+        {/* Quantity + Unit */}
+        <div style={{ display: 'flex', gap: SPACING.md, marginBottom: SPACING.md }}>
+          <div style={{ flex: 2 }}>
+            <InputField
+              label="Quantity"
+              value={form.quantity}
+              onChange={e => setField('quantity', e.target.value)}
+              type="number"
+              placeholder="0"
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <DropdownPicker
+              fieldKey="unit"
+              label="Unit"
+              options={UNITS}
+            />
+          </div>
+        </div>
+
+        {/* Supplier */}
+        <InputField
+          label="Supplier"
+          value={form.supplier}
+          onChange={e => setField('supplier', e.target.value)}
+          placeholder="Supplier name"
+          icon={<IoBusinessOutline size={18} color={COLORS.textLight} />}
+        />
+
+        {/* Delivery Date */}
+        <InputField
+          label="Delivery Date"
+          value={form.deliveryDate}
+          onChange={e => setField('deliveryDate', e.target.value)}
+          type="date"
+          icon={<IoCalendarOutline size={18} color={COLORS.textLight} />}
+        />
+
+        {/* Invoice No */}
+        <InputField
+          label="Invoice No."
+          value={form.invoiceNo}
+          onChange={e => setField('invoiceNo', e.target.value)}
+          placeholder="e.g. INV-2024-001"
+          icon={<IoReceiptOutline size={18} color={COLORS.textLight} />}
+        />
+
+        {/* Notes */}
+        <div style={{ marginBottom: SPACING.md }}>
+          <div style={{ fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.secondary, marginBottom: SPACING.xs }}>
+            Notes (optional)
+          </div>
+          <textarea
+            value={form.notes}
+            onChange={e => setField('notes', e.target.value)}
+            placeholder="Any additional remarks..."
+            rows={3}
+            style={{
+              width: '100%',
+              border: `1.5px solid ${COLORS.border}`,
+              borderRadius: RADIUS.md,
+              padding: SPACING.sm,
+              fontSize: FONTS.sizes.md,
+              color: COLORS.text,
+              backgroundColor: COLORS.surface,
+              resize: 'vertical',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        {/* Submit */}
+        <Button
+          label={loading ? 'Saving...' : 'Save Entry'}
+          onClick={handleSubmit}
+          disabled={loading}
+          icon={<IoSave size={18} color="#fff" />}
+        />
+      </Card>
+    </div>
+  );
+}

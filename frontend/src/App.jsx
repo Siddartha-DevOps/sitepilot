@@ -3,25 +3,26 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 're
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LayoutDashboard, FolderOpen, FileText, Package, Camera, Bell, LogOut, Menu, X, HardHat, ChevronRight } from 'lucide-react'
 
-import Login          from './pages/Login'
-import Dashboard      from './pages/Dashboard'
-import Projects       from './pages/Projects'
-import ProjectDetail  from './pages/ProjectDetail'
-import DailyReport    from './pages/DailyReport'
-import MaterialEntry  from './pages/MaterialEntry'
-import Inventory      from './pages/Inventory'
-import Photos         from './pages/Photos'
-import Notifications  from './pages/Notifications'
-import Profile        from './pages/Profile'
+import Login           from './pages/Login'
+import Dashboard       from './pages/Dashboard'
+import Projects        from './pages/Projects'
+import ProjectDetail   from './pages/ProjectDetail'
+import DailyReport     from './pages/DailyReport'
+import MaterialEntry   from './pages/MaterialEntry'
+import Inventory       from './pages/Inventory'
+import Photos          from './pages/Photos'
+import Notifications   from './pages/Notifications'
+import Profile         from './pages/Profile'
+import WhatIsSitePilot from './pages/WhatIsSitePilot'
 
 const NAV = [
-  { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
-  { to: '/projects',     icon: FolderOpen,      label: 'Projects'      },
-  { to: '/reports/new',  icon: FileText,         label: 'Daily Report'  },
-  { to: '/materials/new',icon: Package,          label: 'Add Material'  },
-  { to: '/inventory',    icon: Package,          label: 'Inventory'     },
-  { to: '/photos',       icon: Camera,           label: 'Photos'        },
-  { to: '/notifications',icon: Bell,             label: 'Notifications' },
+  { to: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard'     },
+  { to: '/projects',      icon: FolderOpen,      label: 'Projects'      },
+  { to: '/reports/new',   icon: FileText,        label: 'Daily Report'  },
+  { to: '/materials/new', icon: Package,         label: 'Add Material'  },
+  { to: '/inventory',     icon: Package,         label: 'Inventory'     },
+  { to: '/photos',        icon: Camera,          label: 'Photos'        },
+  { to: '/notifications', icon: Bell,            label: 'Notifications' },
 ]
 
 function Sidebar({ open, setOpen }) {
@@ -132,8 +133,12 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/*"    element={<Layout />} />
+          {/* ── Public routes — no sidebar, no auth required ── */}
+          <Route path="/login"              element={<Login />} />
+          <Route path="/what-is-sitepilot" element={<WhatIsSitePilot />} />
+
+          {/* ── Authenticated app shell ── */}
+          <Route path="/*" element={<Layout />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

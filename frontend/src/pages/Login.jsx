@@ -205,7 +205,7 @@ export default function Login() {
               <div>
                 <p style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 13, marginBottom: 14 }}>New to SitePilot?</p>
                 {['What is SitePilot?', 'Platform Overview', 'Product Updates', 'Resource Center', 'Trust & Security', 'App Marketplace', 'Developers / API'].map(l => (
-                  <a key={l} href="#" style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 9, textDecoration: 'none' }}
+                  <a key={l} href={l === 'What is SitePilot?' ? '/what-is-sitepilot' : '#'} style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 9, textDecoration: 'none' }}
                     onMouseOver={e => e.currentTarget.style.color = '#f97316'}
                     onMouseOut={e => e.currentTarget.style.color = '#64748b'}
                   >{l}</a>

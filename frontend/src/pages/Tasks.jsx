@@ -125,7 +125,70 @@ function AddTaskModal({ onClose, onAdd }) {
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
+          {/* ── Photos — paste between Category and Notes ── */}
+<div style={{ marginBottom: 16 }}>
+  <label style={ls.label}>Photos (optional)</label>
 
+  {/* Buttons row */}
+  <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+    <label style={{
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: 6, padding: '14px 10px', border: '2px dashed #fed7aa',
+      borderRadius: 12, backgroundColor: '#fff7ed', cursor: 'pointer',
+    }}>
+      <input type="file" accept="image/*" capture="environment"
+        multiple style={{ display: 'none' }}
+        onChange={e => {
+          const urls = Array.from(e.target.files).map(f => ({
+            url: URL.createObjectURL(f), name: f.name
+          }))
+          setForm(f => ({ ...f, photos: [...(f.photos || []), ...urls] }))
+        }}
+      />
+      <span style={{ fontSize: 22 }}>📷</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#f97316' }}>Take Photo</span>
+    </label>
+
+    <label style={{
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: 6, padding: '14px 10px', border: '2px dashed #bfdbfe',
+      borderRadius: 12, backgroundColor: '#eff6ff', cursor: 'pointer',
+    }}>
+      <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+        onChange={e => {
+          const urls = Array.from(e.target.files).map(f => ({
+            url: URL.createObjectURL(f), name: f.name
+          }))
+          setForm(f => ({ ...f, photos: [...(f.photos || []), ...urls] }))
+        }}
+      />
+      <span style={{ fontSize: 22 }}>🖼️</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>Upload Photos</span>
+    </label>
+  </div>
+
+  {/* Preview thumbnails */}
+  {(form.photos || []).length > 0 && (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {form.photos.map((p, i) => (
+        <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
+          <img src={p.url} alt={p.name}
+            style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1.5px solid #e2e8f0' }} />
+          <button type="button"
+            onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, idx) => idx !== i) }))}
+            style={{
+              position: 'absolute', top: -6, right: -6,
+              width: 20, height: 20, borderRadius: '50%',
+              backgroundColor: '#ef4444', border: '2px solid #fff',
+              color: '#fff', fontSize: 11, fontWeight: 900,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1, padding: 0,
+            }}>✕</button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
           {/* Notes */}
           <div style={{ marginBottom: 24 }}>
             <label style={ls.label}>Notes (optional)</label>

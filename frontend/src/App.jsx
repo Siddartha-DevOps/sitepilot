@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LayoutDashboard, FolderOpen, FileText, Package, Camera, Bell, LogOut, Menu, X, HardHat, ChevronRight } from 'lucide-react'
+import { CheckSquare } from 'lucide-react'
 
 import Login           from './pages/Login'
 import Dashboard       from './pages/Dashboard'
 import Projects        from './pages/Projects'
+import Tasks           from './pages/Tasks'
 import ProjectDetail   from './pages/ProjectDetail'
 import DailyReport     from './pages/DailyReport'
 import MaterialEntry   from './pages/MaterialEntry'
@@ -23,6 +25,8 @@ const NAV = [
   { to: '/inventory',     icon: Package,         label: 'Inventory'     },
   { to: '/photos',        icon: Camera,          label: 'Photos'        },
   { to: '/notifications', icon: Bell,            label: 'Notifications' },
+  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+
 ]
 
 function Sidebar({ open, setOpen }) {
@@ -121,6 +125,7 @@ function Layout() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="profile"       element={<Profile />} />
             <Route path="*"             element={<Navigate to="dashboard" replace />} />
+            <Route path="tasks" element={<Tasks />} />
           </Routes>
         </main>
       </div>

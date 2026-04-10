@@ -68,7 +68,7 @@ export default function Login() {
               ))}
             </div>
           </div>
-          <p className="text-sm text-orange-200">© 2025 sitePilot</p>
+          <p className="text-sm text-orange-200">© 2026 sitePilot</p>
         </div>
 
         <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">

@@ -32,8 +32,6 @@ const NAV = [
   { to: '/notifications', icon: Bell,            label: 'Notifications' },
   { to: '/tasks',         icon: CheckSquare,     label: 'Tasks'         },
   { to: '/chat',          icon: MessageCircle,   label: 'Chat'          },
-  { to: '/chat',          icon: MessageCircle,   label: 'Team Chat'     }
-
 ]
 
 function Sidebar({ open, setOpen }) {

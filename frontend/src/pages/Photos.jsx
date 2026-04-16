@@ -119,7 +119,7 @@ export default function PhotoUploadScreen() {
           ) : (
             <div style={styles.dropZone}>
               <CloudUpload size={48} color={COLORS.border} />
-              <div style={styles.dropText}>No photos selected</div>
+              <div style={styles.dropZoneText}>No photos selected</div>
               <div style={styles.dropSub}>Tap camera or upload above</div>
             </div>
           )}
@@ -140,7 +140,7 @@ export default function PhotoUploadScreen() {
                 {PROJECTS.map(p => (
                   <button key={p} style={styles.dropItem} onClick={() => { setProject(p); setShowPicker(false); }}>
                     {project === p ? <CheckCircle size={18} color={COLORS.primary}/> : <Circle size={18} color={COLORS.primary}/>}
-                    <span style={styles.dropText}>{p}</span>
+                    <span style={styles.dropItemText}>{p}</span>
                   </button>
                 ))}
               </div>
@@ -203,7 +203,7 @@ const styles = {
   addMoreThumb: { border: `2px dashed ${COLORS.primary}`, borderRadius: RADIUS.sm, display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' },
   addMoreText: { fontSize: FONTS.sizes.xs, color: COLORS.primary, fontWeight: 700 },
   dropZone: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: SPACING.xl, border: `2px dashed ${COLORS.border}`, borderRadius: RADIUS.md },
-  dropText: { fontSize: FONTS.sizes.md, fontWeight: 600, color: COLORS.textLight, marginTop: 8 },
+  dropZoneText: { fontSize: FONTS.sizes.md, fontWeight: 600, color: COLORS.textLight, marginTop: 8 },
   dropSub: { fontSize: FONTS.sizes.xs, color: COLORS.border, marginTop: 4 },
   fieldLabel: { fontSize: FONTS.sizes.sm, fontWeight: 600, color: COLORS.secondary, marginBottom: SPACING.xs },
   pickerBtn: { display: 'flex', flexDirection: 'row', alignItems: 'center', borderWidth: '1.5px', borderColor: COLORS.border, borderRadius: RADIUS.md, padding: SPACING.sm, backgroundColor: COLORS.surface, cursor: 'pointer' },
@@ -211,7 +211,7 @@ const styles = {
   pickerPH: { flex: 1, fontSize: FONTS.sizes.md, color: COLORS.textLight },
   dropdown: { borderWidth: '1px', borderColor: COLORS.border, borderRadius: RADIUS.md, marginTop: 4, backgroundColor: COLORS.surface, overflow: 'hidden' },
   dropItem: { display: 'flex', alignItems: 'center', padding: SPACING.md, borderBottom: `1px solid ${COLORS.border}`, cursor: 'pointer' },
-  dropText: { fontSize: FONTS.sizes.sm, color: COLORS.text, marginLeft: SPACING.sm },
+  dropItemText: { fontSize: FONTS.sizes.sm, color: COLORS.text, marginLeft: SPACING.sm },
   noteInput: { width: '100%', minHeight: 80, fontSize: FONTS.sizes.md, color: COLORS.text, padding: SPACING.md, border: `1.5px solid ${COLORS.border}`, borderRadius: RADIUS.md, resize: 'vertical' },
   recentGrid: { display: 'flex', flexWrap: 'wrap', gap: SPACING.sm },
   recentCard: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, overflow: 'hidden', width: THUMB, ...SHADOW.sm },

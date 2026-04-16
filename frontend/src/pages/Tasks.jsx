@@ -384,7 +384,8 @@ export default function Tasks() {
           { label: 'Done',        value: counts.done,          color: '#22c55e', bg: '#f0fdf4',  icon: CheckCircle2 },
           { label: 'Overdue',     value: counts.overdue,       color: '#ef4444', bg: '#fef2f2',  icon: AlertCircle },
         ].map(s => (
-          <div key={s.label} style={{ backgroundColor: s.bg, borderRadius: 14, padding: '14px 16px', border: `1.5px solid ${s.color}22` }}
+          <div
+            key={s.label}
             onClick={() => setFilterStat(s.label.toLowerCase().replace(' ', '-'))}
             style={{ backgroundColor: s.bg, borderRadius: 14, padding: '14px 16px', border: `1.5px solid ${s.color}22`, cursor: 'pointer' }}
           >

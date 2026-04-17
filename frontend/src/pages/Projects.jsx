@@ -1,277 +1,306 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../api/client';
-import { Plus, Search, MapPin, Calendar, DollarSign, Users, TrendingUp, MoreVertical, FolderOpen } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Progress } from '../components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Label } from '../components/ui/label';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import api from '../api/client'
+import { Plus, Search, FolderOpen, MapPin, Edit2, Trash2, X, Check, Calendar, DollarSign } from 'lucide-react'
 
-const STATUS_COLORS = {
-  active: 'bg-emerald-100 text-emerald-700',
-  planning: 'bg-blue-100 text-blue-700',
-  on_hold: 'bg-amber-100 text-amber-700',
-  completed: 'bg-slate-100 text-slate-700',
-  cancelled: 'bg-red-100 text-red-700',
-};
+const STATUS_OPTS = ['active', 'completed', 'paused', 'cancelled']
+const EMPTY = { name: '', location: '', description: '', startDate: '', endDate: '', budget: '', manager: '', status: 'active', progress: 0 }
 
-const initialForm = {
-  name: '', number: '', description: '', location: '',
-  address: '', start_date: '', end_date: '', budget: '',
-  status: 'active', phase: 'Construction', client_name: '',
-  contract_type: 'Lump Sum', manager_name: ''
-};
+function ProgressBar({ value }) {
+  const c = value >= 75 ? 'bg-green-500' : value >= 40 ? 'bg-orange-500' : 'bg-red-500'
+  return (
+    <div className="progress-bar w-full">
+      <div className={`h-full rounded-full ${c}`} style={{ width: `${value}%` }} />
+    </div>
+  )
+}
+
+function Modal({ title, onClose, onSave, form, setForm, saving }) {
+  const sf = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="label">Project Name *</label>
+              <input className="input" value={form.name}
+                onChange={e => sf('name', e.target.value)} placeholder="Highway NH-44 Widening" />
+            </div>
+            <div>
+              <label className="label">Location *</label>
+              <input className="input" value={form.location}
+                onChange={e => sf('location', e.target.value)} placeholder="Bangalore–Chennai" />
+            </div>
+            <div>
+              <label className="label">Manager</label>
+              <input className="input" value={form.manager}
+                onChange={e => sf('manager', e.target.value)} placeholder="Ravi Kumar" />
+            </div>
+            <div>
+              <label className="label">Start Date</label>
+              <input className="input" type="date" value={form.startDate}
+                onChange={e => sf('startDate', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">End Date</label>
+              <input className="input" type="date" value={form.endDate}
+                onChange={e => sf('endDate', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Budget</label>
+              <input className="input" value={form.budget}
+                onChange={e => sf('budget', e.target.value)} placeholder="₹4.2 Cr" />
+            </div>
+            <div>
+              <label className="label">Status</label>
+              <select className="input" value={form.status} onChange={e => sf('status', e.target.value)}>
+                {STATUS_OPTS.map(s => (
+                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Progress ({form.progress}%)</label>
+              <input type="range" min={0} max={100} value={form.progress}
+                onChange={e => sf('progress', +e.target.value)}
+                className="w-full accent-orange-500" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Description</label>
+              <textarea className="input" rows={3} value={form.description}
+                onChange={e => sf('description', e.target.value)}
+                placeholder="Project description..." />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 p-6 pt-0">
+          <button onClick={onClose} className="btn btn-ghost flex-1">Cancel</button>
+          <button onClick={onSave} disabled={saving || !form.name || !form.location}
+            className="btn btn-primary flex-1">
+            {saving
+              ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <><Check size={16} /> Save</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Projects() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState(initialForm);
-  const [saving, setSaving] = useState(false);
+  const [projects, setProjects] = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [search,   setSearch]   = useState('')
+  const [filter,   setFilter]   = useState('all')
+  const [modal,    setModal]    = useState(null)
+  const [form,     setForm]     = useState(EMPTY)
+  const [saving,   setSaving]   = useState(false)
+  const [deleting, setDeleting] = useState(null)
 
-  useEffect(() => {
-    fetchProjects();
-    if (searchParams.get('new')) setShowModal(true);
-  }, []);
-
-  const fetchProjects = async () => {
+  async function load() {
+    setLoading(true)
     try {
-      const res = await api.get('/projects');
-      setProjects(res.data);
-    } catch { toast.error('Failed to load projects'); }
-    finally { setLoading(false); }
-  };
+      const params = {}
+      if (filter !== 'all') params.status = filter
+      if (search) params.search = search
+      const { data } = await api.get('/projects', { params })
+      setProjects(data.data || [])
+    } catch {
+      setProjects([])
+    } finally { setLoading(false) }
+  }
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  useEffect(() => { load() }, [filter, search])
+
+  async function save() {
+    setSaving(true)
     try {
-      const payload = { ...form, budget: parseFloat(form.budget) || 0 };
-      await api.post('/projects', payload);
-      toast.success('Project created!');
-      setShowModal(false);
-      setForm(initialForm);
-      fetchProjects();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to create project');
-    } finally { setSaving(false); }
-  };
+      if (modal === 'add') {
+        const { data } = await api.post('/projects', form)
+        setProjects(p => [data, ...p])
+      } else {
+        const { data } = await api.put(`/projects/${modal._id}`, form)
+        setProjects(p => p.map(x => x._id === data._id ? data : x))
+      }
+      setModal(null)
+    } catch (e) {
+      alert(e.response?.data?.message || 'Save failed')
+    } finally { setSaving(false) }
+  }
 
-  const filtered = projects.filter(p => {
-    const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.number?.toLowerCase().includes(search.toLowerCase()) ||
-      p.location?.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || p.status === filter;
-    return matchSearch && matchFilter;
-  });
+  async function del(id) {
+    if (!confirm('Delete this project?')) return
+    setDeleting(id)
+    try {
+      await api.delete(`/projects/${id}`)
+      setProjects(p => p.filter(x => x._id !== id))
+    } finally { setDeleting(null) }
+  }
 
   return (
-    <div className="p-4 lg:p-6 fade-in max-w-[1440px]">
+    <div className="max-w-7xl mx-auto space-y-5">
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900" style={{fontFamily:'Space Grotesk'}}>Projects</h1>
-          <p className="text-slate-500 text-sm">{projects.length} total projects</p>
+          <h1 className="page-title">Projects</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {projects.length} project{projects.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <Button onClick={() => setShowModal(true)} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
+        <button onClick={() => { setForm(EMPTY); setModal('add') }} className="btn btn-primary">
           <Plus size={16} /> New Project
-        </Button>
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search projects..." className="pl-9" data-testid="table-search-input" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input className="input pl-9" placeholder="Search projects…"
+            value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {['all', 'active', 'planning', 'on_hold', 'completed'].map(s => (
+          {['all', ...STATUS_OPTS].map(s => (
             <button key={s} onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                filter === s ? 'bg-orange-500 text-white border-orange-500' :
-                'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
+              className={`badge px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all capitalize ${
+                filter === s
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-orange-50'
               }`}>
-              {s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}
+              {s}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Projects Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <FolderOpen size={48} className="text-slate-200 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-600 mb-1">No projects found</h3>
-          <p className="text-slate-400 text-sm mb-4">Create your first project to get started</p>
-          <Button onClick={() => setShowModal(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
-            <Plus size={16} className="mr-2" /> Create Project
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(p => (
-            <Card key={p.id} className="hover:shadow-md transition-all cursor-pointer border-slate-200"
-              onClick={() => navigate(`/projects/${p.id}`)} data-testid={`table-row-${p.id}`}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className={`text-xs ${STATUS_COLORS[p.status]}`}>{p.status}</Badge>
-                      <span className="text-xs text-slate-400 font-mono-code">{p.number}</span>
-                    </div>
-                    <h3 className="font-semibold text-slate-900 truncate">{p.name}</h3>
-                  </div>
-                </div>
+      {/* Table */}
+      <div className="card p-0 overflow-hidden">
+        {loading ? (
+          <div className="p-8 space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <FolderOpen size={48} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-gray-500">No projects found</p>
+            <button onClick={() => { setForm(EMPTY); setModal('add') }}
+              className="btn btn-primary mt-4 mx-auto">
+              Create first project
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Project</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3 hidden md:table-cell">Location</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3 hidden lg:table-cell">Manager</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3 hidden lg:table-cell">Timeline</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Progress</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-5 py-3">Status</th>
+                  <th className="px-5 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map(p => (
+                  <tr key={p._id} className="table-row">
+                    <td className="px-5 py-4">
+                      <Link to={`/projects/${p._id}`}
+                        className="font-semibold text-slate-800 hover:text-orange-600 transition-colors">
+                        {p.name}
+                      </Link>
+                      <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                        <DollarSign size={10} /> {p.budget || '—'}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 hidden md:table-cell">
+                      <span className="flex items-center gap-1 text-sm text-gray-500">
+                        <MapPin size={12} />{p.location}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <span className="text-sm text-gray-600">{p.manager || '—'}</span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <div className="text-xs text-gray-500 space-y-0.5">
+                        {p.startDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar size={10} />
+                            {new Date(p.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
+                          </div>
+                        )}
+                        {p.endDate && (
+                          <div className="flex items-center gap-1 text-gray-400">
+                            → {new Date(p.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 min-w-[140px]">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1"><ProgressBar value={p.progress} /></div>
+                        <span className="text-xs font-bold text-gray-600 w-8 text-right">
+                          {p.progress}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`badge badge-${p.status}`}>{p.status}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => {
+                            setForm({
+                              ...p,
+                              startDate: p.startDate?.slice(0, 10) || '',
+                              endDate:   p.endDate?.slice(0, 10) || '',
+                            })
+                            setModal(p)
+                          }}
+                          className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-lg transition-colors">
+                          <Edit2 size={15} />
+                        </button>
+                        <button onClick={() => del(p._id)} disabled={deleting === p._id}
+                          className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                          {deleting === p._id
+                            ? <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin block" />
+                            : <Trash2 size={15} />
+                          }
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-                <div className="space-y-2 mb-4">
-                  {p.location && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <MapPin size={12} className="text-slate-400" />
-                      <span className="truncate">{p.location}</span>
-                    </div>
-                  )}
-                  {p.client_name && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Users size={12} className="text-slate-400" />
-                      <span className="truncate">{p.client_name}</span>
-                    </div>
-                  )}
-                  {p.budget > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <DollarSign size={12} className="text-slate-400" />
-                      <span>${p.budget?.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {p.end_date && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Calendar size={12} className="text-slate-400" />
-                      <span>Due: {new Date(p.end_date).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-                    <span>Progress</span>
-                    <span className="font-medium">{p.progress || 0}%</span>
-                  </div>
-                  <Progress value={p.progress || 0} className="h-1.5" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {modal && (
+        <Modal
+          title={modal === 'add' ? 'Add New Project' : 'Edit Project'}
+          onClose={() => setModal(null)}
+          onSave={save}
+          form={form}
+          setForm={setForm}
+          saving={saving}
+        />
       )}
-
-      {/* Create Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle style={{fontFamily:'Space Grotesk'}}>Create New Project</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <Label>Project Name *</Label>
-                <Input value={form.name} onChange={e => setForm(p=>({...p,name:e.target.value}))}
-                  placeholder="Downtown Office Tower" required className="mt-1" />
-              </div>
-              <div>
-                <Label>Project Number</Label>
-                <Input value={form.number} onChange={e => setForm(p=>({...p,number:e.target.value}))}
-                  placeholder="SP-2024-001" className="mt-1" />
-              </div>
-              <div>
-                <Label>Phase</Label>
-                <select value={form.phase} onChange={e => setForm(p=>({...p,phase:e.target.value}))}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                  {['Preconstruction','Design','Construction','Closeout'].map(ph => (
-                    <option key={ph}>{ph}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label>Client / Owner Name</Label>
-                <Input value={form.client_name} onChange={e => setForm(p=>({...p,client_name:e.target.value}))}
-                  placeholder="ABC Development Corp" className="mt-1" />
-              </div>
-              <div>
-                <Label>Contract Type</Label>
-                <select value={form.contract_type} onChange={e => setForm(p=>({...p,contract_type:e.target.value}))}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                  {['Lump Sum','GMP','Cost Plus','Unit Price','T&M'].map(ct => (
-                    <option key={ct}>{ct}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label>Location</Label>
-                <Input value={form.location} onChange={e => setForm(p=>({...p,location:e.target.value}))}
-                  placeholder="San Francisco, CA" className="mt-1" />
-              </div>
-              <div>
-                <Label>Address</Label>
-                <Input value={form.address} onChange={e => setForm(p=>({...p,address:e.target.value}))}
-                  placeholder="123 Main St" className="mt-1" />
-              </div>
-              <div>
-                <Label>Budget ($)</Label>
-                <Input type="number" value={form.budget} onChange={e => setForm(p=>({...p,budget:e.target.value}))}
-                  placeholder="5000000" className="mt-1" />
-              </div>
-              <div>
-                <Label>Start Date</Label>
-                <Input type="date" value={form.start_date} onChange={e => setForm(p=>({...p,start_date:e.target.value}))}
-                  className="mt-1" />
-              </div>
-              <div>
-                <Label>End Date</Label>
-                <Input type="date" value={form.end_date} onChange={e => setForm(p=>({...p,end_date:e.target.value}))}
-                  className="mt-1" />
-              </div>
-              <div>
-                <Label>Project Manager</Label>
-                <Input value={form.manager_name} onChange={e => setForm(p=>({...p,manager_name:e.target.value}))}
-                  placeholder="John Smith" className="mt-1" />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <select value={form.status} onChange={e => setForm(p=>({...p,status:e.target.value}))}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                  {['active','planning','on_hold','completed'].map(s => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1).replace('_',' ')}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <Label>Description</Label>
-                <textarea value={form.description} onChange={e => setForm(p=>({...p,description:e.target.value}))}
-                  placeholder="Brief project description..." rows={3}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-orange-500 hover:bg-orange-600 text-white">
-                {saving ? 'Creating...' : 'Create Project'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
-  );
+  )
 }

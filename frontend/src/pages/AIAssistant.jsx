@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, Send, Loader2, Bot, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';

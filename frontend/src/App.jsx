@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { AuthProvider } from "./contexts/AuthContext"
 
 import Login from "./pages/Login"
 import WhatIsSitePilot from "./pages/whatissitepilot"

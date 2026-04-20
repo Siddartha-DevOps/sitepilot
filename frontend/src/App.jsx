@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider } from "./contexts/AuthContext"
+import Layout from "./components/Layout"
+
 
 import Login from "./pages/Login"
 import WhatIsSitePilot from "./pages/whatissitepilot"
@@ -15,27 +17,35 @@ import Chat from "./pages/Chat"
 import DailyReport from "./pages/DailyReport"
 import MaterialEntry from "./pages/MaterialEntry"
 import ProjectDetail from "./pages/ProjectDetail"
+import Directory from "./pages/Directory"
+
+function PrivateLayout({ children }) {
+  return <Layout>{children}</Layout>
+}
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/what-is-sitepilot" element={<WhatIsSitePilot />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/photos" element={<Photos />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/ai-assistant" element={<AIAssistant />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/daily-report" element={<DailyReport />} />
-        <Route path="/material-entry" element={<MaterialEntry />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/what-is-sitepilot" element={<WhatIsSitePilot />} />
+          <Route path="/dashboard"      element={<PrivateLayout><Dashboard /></PrivateLayout>} />
+          <Route path="/projects"       element={<PrivateLayout><Projects /></PrivateLayout>} />
+          <Route path="/projects/:id"   element={<PrivateLayout><ProjectDetail /></PrivateLayout>} />
+          <Route path="/tasks"          element={<PrivateLayout><Tasks /></PrivateLayout>} />
+          <Route path="/photos"         element={<PrivateLayout><Photos /></PrivateLayout>} />
+          <Route path="/notifications"  element={<PrivateLayout><Notifications /></PrivateLayout>} />
+          <Route path="/profile"        element={<PrivateLayout><Profile /></PrivateLayout>} />
+          <Route path="/ai-assistant"   element={<PrivateLayout><AIAssistant /></PrivateLayout>} />
+          <Route path="/inventory"      element={<PrivateLayout><Inventory /></PrivateLayout>} />
+          <Route path="/chat"           element={<PrivateLayout><Chat /></PrivateLayout>} />
+          <Route path="/daily-report"   element={<PrivateLayout><DailyReport /></PrivateLayout>} />
+          <Route path="/material-entry" element={<PrivateLayout><MaterialEntry /></PrivateLayout>} />
+          <Route path="/directory" element={<PrivateLayout><Directory /></PrivateLayout>} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

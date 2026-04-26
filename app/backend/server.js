@@ -7,6 +7,7 @@ const morgan    = require('morgan');
 const path      = require('path');
 const rateLimit = require('express-rate-limit');
 const fs        = require('fs');
+const timesheetsRouter = require('./routes/timesheets');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use('/api/materials',     require('./routes/materials'));
 app.use('/api/photos',        require('./routes/photos'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/dashboard',     require('./routes/dashboard'));
+app.use('/api/timesheets', timesheetsRouter);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK', time: new Date().toISOString() }));

@@ -18,6 +18,7 @@ import DailyReport from "./pages/DailyReport"
 import MaterialEntry from "./pages/MaterialEntry"
 import ProjectDetail from "./pages/ProjectDetail"
 import Directory from "./pages/Directory"
+import Timesheets from './pages/Timesheets';
 
 function PrivateLayout({ children }) {
   return <Layout>{children}</Layout>
@@ -43,7 +44,9 @@ export default function App() {
           <Route path="/daily-report"   element={<PrivateLayout><DailyReport /></PrivateLayout>} />
           <Route path="/material-entry" element={<PrivateLayout><MaterialEntry /></PrivateLayout>} />
           <Route path="/directory" element={<PrivateLayout><Directory /></PrivateLayout>} />
+          <Route path="/timesheets" element={<Timesheets />} />
           <Route path="*" element={<Navigate to="/login" />} />
+          <NavLink to="/timesheets">⏱ Timesheets</NavLink>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
